@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CyberFIR AI</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>CyberFIR AI</h1>
+    <p class="subtitle">AI-based Cybercrime FIR Draft Assistant</p>
+
+    <div class="form">
+      <label>Your Name</label>
+      <input id="name" type="text" placeholder="Enter your full name" />
+
+      <label>City</label>
+      <input id="city" type="text" placeholder="Enter your city" />
+
+      <label>Describe the Incident</label>
+      <textarea id="incident" rows="6" placeholder="Describe what happened in detail"></textarea>
+
+      <button onclick="generateFIR()">Generate FIR</button>
+    </div>
+
+    <div id="result" class="result hidden">
+  <h2>Prediction</h2>
+  <p><strong>Crime Type:</strong> <span id="crimeType"></span></p>
+  <p><strong>Legal Sections:</strong> <span id="sections"></span></p>
+
+  <h2>FIR Draft</h2>
+  <pre id="firText"></pre>
+
+  <button id="pdfBtn" onclick="downloadPDF()">Download FIR as PDF</button>
+</div>
+
+  </div>
+
+ 
+  <script>
+  async function generateFIR() {
+    const name = document.getElementById("name").value.trim();
+    const city = document.getElementById("city").value.trim();
+    const incident = document.getElementById("incident").value.trim();
+
+    if (!name || !city || !incident) {
+      alert("Please fill all fields.");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/generate_fir", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, city, incident })
+      });
+
+      const data = await res.json();
+
+      document.getElementById("crimeType").innerText = data.crime;
+      document.getElementById("sections").innerText = data.sections.join(", ");
+      document.getElementById("firText").innerText = data.fir;
+
+      document.getElementById("result").classList.remove("hidden");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to connect to backend. Is Flask running?");
+    }
+  }
+
+  async function downloadPDF() {
+    const name = document.getElementById("name").value.trim();
+    const city = document.getElementById("city").value.trim();
+    const incident = document.getElementById("incident").value.trim();
+
+    if (!name || !city || !incident) {
+      alert("Please fill all fields before downloading.");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://127.0.0.1:5000/generate_fir_pdf", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, city, incident })
+      });
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "CyberFIR.pdf";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to download PDF. Is backend running?");
+    }
+  }
+</script>
+
+</body>
+</html>
